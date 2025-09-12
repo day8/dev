@@ -1,10 +1,11 @@
 (ns day8.dev
   (:require
-   [shadow.cljs.devtools.api :as shadow]
-   [shadow.cljs.devtools.server :as server]
    [clojure.string :as str]
    [babashka.process :refer [shell]]
-   [babashka.fs :as fs]))
+   [babashka.fs :as fs]
+   #?@(:bb []
+       :clj [[shadow.cljs.devtools.api :as shadow]
+             [shadow.cljs.devtools.server :as server]])))
 
 (defn trim-v [s] (apply str (drop-while #{\v} s)))
 
@@ -51,11 +52,12 @@
       (fs/delete-on-exit f))
     (fs/update-file f git-app-version!)))
 
-(defn cljs-repl
-  "Connects to a given build-id. Defaults to `:app`."
-  ([]
-   (cljs-repl :app))
-  ([build-id]
-   (server/start!)
-   (shadow/watch build-id)
-   (shadow/nrepl-select build-id)))
+#?(:bb nil
+   :clj (defn cljs-repl
+          "Connects to a given build-id. Defaults to `:app`."
+          ([]
+           (cljs-repl :app))
+          ([build-id]
+           (server/start!)
+           (shadow/watch build-id)
+           (shadow/nrepl-select build-id))))
