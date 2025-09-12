@@ -1,5 +1,7 @@
 (ns day8.dev
   (:require
+   [shadow.cljs.devtools.api :as shadow]
+   [shadow.cljs.devtools.server :as server]
    [clojure.string :as str]
    [babashka.process :refer [shell]]
    [babashka.fs :as fs]))
@@ -53,3 +55,11 @@
            str/trim)))
 
 (defmacro app-version [] (git-app-version!))
+(defn cljs-repl
+  "Connects to a given build-id. Defaults to `:app`."
+  ([]
+   (cljs-repl :app))
+  ([build-id]
+   (server/start!)
+   (shadow/watch build-id)
+   (shadow/nrepl-select build-id)))
