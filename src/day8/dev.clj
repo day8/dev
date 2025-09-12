@@ -10,51 +10,40 @@
 
 (defn release-tag? [s] (re-find (re-pattern "^v\\d+\\.\\d+\\.\\d+$") s))
 
-(defn client-dir []
-  (let [wd                 (first (take-while (fn [s] (not (str/starts-with? s "-")))
-                                              *command-line-args*))
-        opts               (cond-> {:out :string} wd (assoc :dir wd))
-        dir                (-> opts
-                               (shell "git rev-parse --show-toplevel")
-                               :out
-                               str/trim)
-        assume-client-dir? (fs/exists? (fs/file dir "client" "deps.edn"))
-        dir                (cond-> dir
-                             assume-client-dir? (str "/client"))]
-       dir))
-
-  (defn git-latest-hash! [& {:keys [dir]}]
-     (->> "git log -1 --format=%h"
-          (shell {:out :string :dir dir})
-          :out
-          str/trim))
+(defn git-latest-hash! [& {:keys [dir]}]
+  (some->> "git log -1 --format=%h"
+           (shell {:out :string :dir dir})
+           :out
+           str/trim))
 
 (defn git-release-tag! [& {:keys [dir]}]
-     (->> (shell {:out :string
-                  :dir dir}
-                 "git tag -l --sort=v:refname")
-          :out
-          str/split-lines
-          (filter release-tag?)
-          last
-          str/trim))
+  (some->> "git tag -l --sort=v:refname"
+           (shell {:out :string :dir dir})
+           :out
+           str/split-lines
+           (filter release-tag?)
+           last
+           str/trim))
 
 (defn git-release-hash! [& {:keys [dir] :as opts}]
-     (->> (git-release-tag! opts)
-          (str "git rev-parse --short ")
-          (shell {:out :string :dir dir})
-          :out
-          str/trim))
+     (some->> (git-release-tag! opts)
+              (str "git rev-parse --short ")
+              (shell {:out :string :dir dir})
+              :out
+              str/trim))
 
 (defn git-app-version! [& {:as opts}]
   (let [r-hash (git-release-hash! opts)
         l-hash (git-latest-hash! opts)]
-       (-> (trim-v (git-release-tag! opts))
-           (cond-> (not= r-hash l-hash) (str "--" l-hash))
-           (str/replace "\n" "")
-           str/trim)))
+    (-> (git-release-tag! opts)
+        (or "0.0.0")
+        trim-v
+        (cond-> (not= r-hash l-hash) (str "--" l-hash))
+        (str/replace "\n" "")
+        str/trim)))
 
-(defmacro app-version [] (git-app-version!))
+(defmacro app-version [_] (git-app-version!))
+
 (defn cljs-repl
   "Connects to a given build-id. Defaults to `:app`."
   ([]
