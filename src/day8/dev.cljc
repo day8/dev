@@ -43,15 +43,6 @@
         (str/replace "\n" "")
         str/trim)))
 
-(defmacro app-version [] (git-app-version!))
-
-(defn version-dotfile! []
-  (let [f (fs/file ".version")]
-    (when-not (fs/exists? f)
-      (fs/create-file f)
-      (fs/delete-on-exit f))
-    (fs/update-file f git-app-version!)))
-
 #?(:bb nil
    :clj (defn cljs-repl
           "Connects to a given build-id. Defaults to `:app`."
