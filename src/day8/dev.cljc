@@ -43,6 +43,12 @@
         (str/replace "\n" "")
         str/trim)))
 
+(defn version-build-hook {:shadow.build/stage :configure}
+  [build-state]
+  (let [k :day8.dev/git-app-version
+        v (git-app-version!)]
+    (update-in build-state [:compiler-options :closure-defines] update-vals #({k v} % %))))
+
 #?(:bb nil
    :clj (defn cljs-repl
           "Connects to a given build-id. Defaults to `:app`."
